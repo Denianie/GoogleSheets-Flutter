@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:form/api/sheets/form_sheets_api.dart';
-import 'package:form/model/form.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class RegistrationScreen extends StatelessWidget {
   final TextEditingController _dniController = TextEditingController();
@@ -9,26 +9,33 @@ class RegistrationScreen extends StatelessWidget {
   final TextEditingController _phoneController = TextEditingController();
 
   void _registerClient(BuildContext context) async {
-    final id = DateTime.now().millisecondsSinceEpoch.toString();
-    final Map<String, String> data = {
-      FormFields.id: id,
-      FormFields.name: _nameController.text,
-      FormFields.email: _emailController.text,
-      FormFields.phone: _phoneController.text,
-      FormFields.dni: _dniController.text,
-    };
-    await FormSheetsApi.insert(data);
+  final response = await http.post(
+    Uri.parse('http://localhost:8000/api/v1/personas/'),
+    headers: {'Content-Type': 'application/json'},
+    body: json.encode({
+      'nombres_apellidos': _nameController.text,
+      'celular': _phoneController.text,
+      'dni': _dniController.text,
+      'correo': _emailController.text,
+    }),
+  );
+
+  if (response.statusCode == 201) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Datos guardados correctamente'),
-        duration: Duration(seconds: 2),
-      ),
+      SnackBar(content: Text('Datos guardados correctamente')),
     );
     _dniController.clear();
     _nameController.clear();
     _emailController.clear();
     _phoneController.clear();
+  } else {
+    print('Error: ${response.statusCode}');
+    print('Response: ${response.body}');
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Error al guardar los datos')),
+    );
   }
+}
 
   @override
   Widget build(BuildContext context) {
